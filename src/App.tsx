@@ -20,6 +20,8 @@ type AppState = 'scanning' | 'spark' | 'dashboard' | 'wallet' | 'schedule' | 'ch
 export default function App() {
   const [appState, setAppState] = useState<AppState>('scanning');
   const [showFilters, setShowFilters] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<User>({
     id: 'my_id',
     displayName: 'Me',
@@ -27,6 +29,24 @@ export default function App() {
     avatarUrl: '',
     interests: []
   });
+
+  useEffect(() => {
+    if (!scheduledDate || appState !== 'dashboard') return;
+    const updateCountdown = () => {
+      const diff = new Date(scheduledDate).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('It\'s Date Time! 🎉');
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [scheduledDate, appState]);
 
   useEffect(() => {
     if (appState === 'scanning' && !showFilters) {
@@ -137,6 +157,17 @@ export default function App() {
               <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Match Accepted!</h1>
               <p className="text-slate-500 mb-6">You and {mockMatch.user.displayName} both felt the spark.</p>
               
+              {scheduledDate && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-gradient-to-r from-violet-600 to-pink-500 p-4 rounded-2xl shadow-md text-white mb-6 text-center"
+                >
+                  <h3 className="text-[11px] uppercase font-bold tracking-widest opacity-80 mb-1">Next Date In</h3>
+                  <p className="text-2xl font-black font-mono tracking-widest">{timeLeft}</p>
+                </motion.div>
+              )}
+
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 flex items-center gap-4">
                 <img src={mockMatch.user.avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
                 <div className="flex-1">
@@ -211,8 +242,8 @@ export default function App() {
                 venues={mockVenues}
                 timeSlots={mockTimeSlots}
                 onBack={() => setAppState('dashboard')}
-                onConfirm={() => {
-                  alert('Date Scheduled!');
+                onConfirm={(time) => {
+                  setScheduledDate(time);
                   setAppState('dashboard');
                 }}
               />

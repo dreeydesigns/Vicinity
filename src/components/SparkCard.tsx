@@ -15,6 +15,10 @@ export function SparkCard({ match, onDismiss, onAccept, onDecline }: SparkCardPr
   const [loadingSummary, setLoadingSummary] = useState(false);
 
   useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([200, 100, 200]);
+    }
+
     async function fetchSummary() {
       setLoadingSummary(true);
       try {

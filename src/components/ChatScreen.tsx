@@ -17,9 +17,13 @@ export function ChatScreen({ match, onBack }: ChatScreenProps) {
       read: true,
     }
   ]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState(() => localStorage.getItem(`draft_${match.id}`) || '');
   const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem(`draft_${match.id}`, inputText);
+  }, [inputText, match.id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,6 +46,7 @@ export function ChatScreen({ match, onBack }: ChatScreenProps) {
 
     setMessages([...messages, newMessage]);
     setInputText('');
+    localStorage.removeItem(`draft_${match.id}`);
 
     // Simulate read receipt
     setTimeout(() => {
@@ -50,6 +55,9 @@ export function ChatScreen({ match, onBack }: ChatScreenProps) {
 
     // Simulate response
     setTimeout(() => {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
+      }
       const responseMessage: Message = {
         id: `m${Date.now() + 1}`,
         senderId: match.user.id,

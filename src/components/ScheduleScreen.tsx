@@ -6,7 +6,7 @@ interface ScheduleScreenProps {
   venues: VenueOption[];
   timeSlots: TimeSlot[];
   onBack: () => void;
-  onConfirm: () => void;
+  onConfirm: (date: string) => void;
 }
 
 export function ScheduleScreen({ venues, timeSlots, onBack, onConfirm }: ScheduleScreenProps) {
@@ -68,7 +68,7 @@ export function ScheduleScreen({ venues, timeSlots, onBack, onConfirm }: Schedul
         Notification.requestPermission();
       }
 
-      onConfirm();
+      onConfirm(selectedTime);
     }, 1500);
   };
 
@@ -116,9 +116,18 @@ export function ScheduleScreen({ venues, timeSlots, onBack, onConfirm }: Schedul
                   <p className="text-xs text-slate-500 mb-1.5 truncate">{venue.address}</p>
                   
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-xs font-semibold text-amber-500 flex items-center gap-0.5">
-                      <Star size={10} className="fill-amber-500" /> {venue.rating.toFixed(1)}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            size={10} 
+                            className={star <= Math.round(venue.rating) ? "text-amber-500 fill-amber-500" : "text-slate-300"} 
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-500">{venue.rating.toFixed(1)}</span>
+                    </div>
                     <span className="text-xs text-slate-500">{priceDots(venue.priceLevel)}</span>
                     <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-white capitalize ${getVibeColor(venue.vibe)}`}>
                       {venue.vibe}
