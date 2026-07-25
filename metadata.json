@@ -1,0 +1,6 @@
+{
+  "name": "Vicinity",
+  "description": "Proximity-based matching and dating application featuring encrypted wallets, auto-scheduling, and real-time spark alerts.",
+  "requestFramePermissions": ["geolocation", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
