@@ -19,7 +19,24 @@ export function ChatScreen({ match, onBack }: ChatScreenProps) {
   ]);
   const [inputText, setInputText] = useState(() => localStorage.getItem(`draft_${match.id}`) || '');
   const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
+  const [showPrompts, setShowPrompts] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const getPrompts = () => {
+    if (match.sharedInterests && match.sharedInterests.length > 0) {
+      const interest = match.sharedInterests[0];
+      return [
+        `What's your favorite thing about ${interest}?`,
+        `How long have you been into ${interest}?`,
+        `Got any good recommendations for ${interest}?`
+      ];
+    }
+    return [
+      "What are you looking forward to this week?",
+      "What's the best thing that happened to you today?",
+      "What's your favorite way to spend a weekend?"
+    ];
+  };
 
   useEffect(() => {
     localStorage.setItem(`draft_${match.id}`, inputText);
@@ -159,6 +176,22 @@ export function ChatScreen({ match, onBack }: ChatScreenProps) {
 
       {/* Input */}
       <div className="p-4 bg-white border-t border-slate-200">
+        {showPrompts && messages.length <= 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-3 mb-2 scrollbar-hide">
+            {getPrompts().map((prompt, i) => (
+              <button 
+                key={i}
+                onClick={() => {
+                  setInputText(prompt);
+                  setShowPrompts(false);
+                }}
+                className="whitespace-nowrap px-3 py-1.5 bg-violet-50 text-violet-700 text-xs font-semibold rounded-full border border-violet-100 hover:bg-violet-100 transition-colors"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <input
             type="text"

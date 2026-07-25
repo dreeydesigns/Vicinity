@@ -4,7 +4,9 @@
  */
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Radar, Calendar, Wallet, Settings, Activity, SlidersHorizontal, MessageCircle } from 'lucide-react';
+import { Radar, Calendar, Wallet, Settings, Activity, SlidersHorizontal, MessageCircle, Archive } from 'lucide-react';
+import { DateHistory } from './components/DateHistory';
+import { SparkArchive } from './components/SparkArchive';
 import { SparkCard } from './components/SparkCard';
 import { WalletScreen } from './components/WalletScreen';
 import { ScheduleScreen } from './components/ScheduleScreen';
@@ -20,6 +22,7 @@ type AppState = 'scanning' | 'spark' | 'dashboard' | 'wallet' | 'schedule' | 'ch
 export default function App() {
   const [appState, setAppState] = useState<AppState>('scanning');
   const [showFilters, setShowFilters] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<User>({
@@ -89,6 +92,12 @@ export default function App() {
             >
               <div className="absolute top-6 right-6 z-20 flex gap-4">
                 <button 
+                  onClick={() => setShowArchive(true)}
+                  className="p-3 bg-slate-800/50 hover:bg-slate-800 rounded-full text-slate-300 transition-colors"
+                >
+                  <Archive size={20} />
+                </button>
+                <button 
                   onClick={() => setShowFilters(true)}
                   className="p-3 bg-slate-800/50 hover:bg-slate-800 rounded-full text-slate-300 transition-colors"
                 >
@@ -142,6 +151,16 @@ export default function App() {
                 <ScanningFilters 
                   onClose={() => setShowFilters(false)}
                   onApply={handleApplyFilters}
+                />
+              )}
+
+              {showArchive && (
+                <SparkArchive 
+                  onClose={() => setShowArchive(false)}
+                  onReconsider={(match) => {
+                    setShowArchive(false);
+                    setAppState('spark');
+                  }}
                 />
               )}
             </motion.div>
@@ -202,6 +221,8 @@ export default function App() {
                   <span className="font-semibold text-slate-700">Schedule Date</span>
                 </button>
               </div>
+
+              <DateHistory />
 
               <div className="mb-8">
                 <MiniMap matches={[mockMatch]} venues={mockVenues} />
