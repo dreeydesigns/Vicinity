@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ChevronLeft, Star, Utensils, Calendar, MapPin, CheckCircle2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Star, Utensils, Calendar as CalendarIcon, MapPin, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { VenueOption, TimeSlot } from '../types';
+import { googleSignIn, initAuth, getAccessToken } from '../lib/google-auth';
 
 interface ScheduleScreenProps {
   venues: VenueOption[];
@@ -9,10 +10,55 @@ interface ScheduleScreenProps {
   onConfirm: (date: string) => void;
 }
 
-export function ScheduleScreen({ venues, timeSlots, onBack, onConfirm }: ScheduleScreenProps) {
+export function ScheduleScreen({ venues, timeSlots: initialTimeSlots, onBack, onConfirm }: ScheduleScreenProps) {
   const [selectedVenue, setSelectedVenue] = useState<string | null>(venues[0]?.id || null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(timeSlots[0]?.start || null);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(initialTimeSlots);
+  const [selectedTime, setSelectedTime] = useState<string | null>(initialTimeSlots[0]?.start || null);
   const [confirming, setConfirming] = useState(false);
+  const [needsAuth, setNeedsAuth] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [calendarSynced, setCalendarSynced] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      () => setNeedsAuth(false),
+      () => setNeedsAuth(true)
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const handleSyncCalendar = async () => {
+    setIsSyncing(true);
+    try {
+      if (needsAuth) {
+        await googleSignIn();
+        setNeedsAuth(false);
+      }
+      const token = await getAccessToken();
+      if (!token) throw new Error('No access token available');
+
+      const timeMin = new Date().toISOString();
+      const timeMax = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      
+      // We simulate picking a new suggested time based on the response
+      if (data.items) {
+        setCalendarSynced(true);
+        // Let's just highlight a specific timeslot as "Suggested" or generate a new one
+        const suggestedStart = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+        const newSlot: TimeSlot = { start: suggestedStart, durationMinutes: 60, label: 'afternoon' };
+        setTimeSlots([newSlot, ...initialTimeSlots.slice(0, 3)]);
+        setSelectedTime(newSlot.start);
+      }
+    } catch (err) {
+      console.error('Failed to sync calendar', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -150,7 +196,19 @@ export function ScheduleScreen({ venues, timeSlots, onBack, onConfirm }: Schedul
           ))}
         </div>
 
-        <h2 className="text-[11px] font-bold text-slate-400 tracking-wider mb-3 uppercase">Mutual Free Times</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Mutual Free Times</h2>
+          <button 
+            onClick={handleSyncCalendar} 
+            disabled={isSyncing}
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              calendarSynced ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+            }`}
+          >
+            {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            {calendarSynced ? 'Synced' : 'Auto-Sync'}
+          </button>
+        </div>
         
         <div className="flex flex-wrap gap-2.5">
           {timeSlots.map((slot) => (
@@ -185,7 +243,7 @@ export function ScheduleScreen({ venues, timeSlots, onBack, onConfirm }: Schedul
             <Loader2 size={24} className="animate-spin" />
           ) : (
             <>
-              <Calendar size={20} />
+              <CalendarIcon size={20} />
               Confirm Date
             </>
           )}

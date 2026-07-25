@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Heart, MapPin, Clock, User } from 'lucide-react';
 import { Match } from '../types';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 
 interface SparkCardProps {
   match: Match;
@@ -9,6 +10,14 @@ interface SparkCardProps {
   onAccept: () => void;
   onDecline: () => void;
 }
+
+const mockCompatibilityData = [
+  { subject: 'Hobbies', A: 90, fullMark: 100 },
+  { subject: 'Values', A: 85, fullMark: 100 },
+  { subject: 'Location', A: 95, fullMark: 100 },
+  { subject: 'Vibe', A: 80, fullMark: 100 },
+  { subject: 'Humor', A: 88, fullMark: 100 },
+];
 
 export function SparkCard({ match, onDismiss, onAccept, onDecline }: SparkCardProps) {
   const [summary, setSummary] = useState<string | null>(null);
@@ -105,7 +114,7 @@ export function SparkCard({ match, onDismiss, onAccept, onDecline }: SparkCardPr
 
           <h3 className="text-2xl font-bold text-slate-900 mb-1.5">{match.user.displayName}</h3>
           
-          <div className="min-h-[48px] w-full px-4 mb-4">
+          <div className="min-h-[48px] w-full px-4 mb-2">
             {loadingSummary ? (
               <div className="animate-pulse flex flex-col items-center gap-1">
                 <div className="h-2.5 bg-slate-200 rounded w-full"></div>
@@ -121,6 +130,16 @@ export function SparkCard({ match, onDismiss, onAccept, onDecline }: SparkCardPr
                 {match.user.bio}
               </p>
             ) : null}
+          </div>
+
+          <div className="w-full h-[150px] mb-4 flex justify-center -ml-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart cx="50%" cy="50%" outerRadius="60%" data={mockCompatibilityData}>
+                <PolarGrid stroke="#f1f5f9" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} />
+                <Radar name="Compatibility" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
+              </RadarChart>
+            </ResponsiveContainer>
           </div>
 
           {match.sharedInterests.length > 0 && (

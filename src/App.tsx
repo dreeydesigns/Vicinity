@@ -23,6 +23,8 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>('scanning');
   const [showFilters, setShowFilters] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+  const [vibe, setVibe] = useState('default');
+  const [onDateMode, setOnDateMode] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<User>({
@@ -73,12 +75,22 @@ export default function App() {
     // Scanning will restart due to useEffect
   };
 
-  const handleSaveProfile = (bio: string, avatarUrl: string) => {
+  const handleSaveProfile = (bio: string, avatarUrl: string, newVibe: string) => {
     setCurrentUser(prev => ({ ...prev, bio, avatarUrl }));
+    setVibe(newVibe);
+  };
+
+  const getVibeClass = () => {
+    switch (vibe) {
+      case 'sunset': return 'hue-rotate-[-30deg] sepia-[0.2] saturate-[1.5]';
+      case 'neon': return 'hue-rotate-[90deg] saturate-[2]';
+      case 'midnight': return 'grayscale-[0.3] hue-rotate-[180deg] brightness-[0.9]';
+      default: return '';
+    }
   };
 
   return (
-    <div className="w-full h-full min-h-screen bg-slate-50 relative overflow-hidden font-sans">
+    <div className={`w-full h-full min-h-screen bg-slate-50 relative overflow-hidden font-sans transition-all duration-700 ${getVibeClass()}`}>
       <div className="w-full max-w-[480px] h-full min-h-screen mx-auto bg-white shadow-xl relative overflow-hidden flex flex-col">
         
         <AnimatePresence mode="wait">
@@ -176,6 +188,42 @@ export default function App() {
               <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Match Accepted!</h1>
               <p className="text-slate-500 mb-6">You and {mockMatch.user.displayName} both felt the spark.</p>
               
+              <div className="flex items-center justify-between bg-violet-50 p-4 rounded-2xl border border-violet-100 mb-6">
+                <div>
+                  <h3 className="font-bold text-violet-900">On-Date Mode</h3>
+                  <p className="text-xs text-violet-700">Get dynamic prompts if you're close to the venue.</p>
+                </div>
+                <button 
+                  onClick={() => setOnDateMode(!onDateMode)}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${onDateMode ? 'bg-violet-500' : 'bg-slate-300'}`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${onDateMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              {onDateMode && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="bg-white border-2 border-violet-200 p-4 rounded-2xl mb-6 shadow-sm overflow-hidden"
+                >
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-violet-500 mb-3 flex items-center gap-2">
+                    <MessageCircle size={14} /> Topic Suggestion
+                  </h3>
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={Math.floor(Date.now() / 10000)} // This will change every 10 seconds if we had a tick, but for now we'll just pick a random one on render
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="text-lg font-medium text-slate-800"
+                    >
+                      {['What\'s the most spontaneous thing you\'ve ever done?', 'If you could travel anywhere tomorrow, where to?', 'What\'s a hobby you\'ve always wanted to pick up?'][Math.floor(Date.now() / 10000) % 3]}
+                    </motion.p>
+                  </AnimatePresence>
+                </motion.div>
+              )}
+
               {scheduledDate && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -294,6 +342,7 @@ export default function App() {
             >
               <SettingsScreen
                 user={currentUser}
+                vibe={vibe}
                 onSave={handleSaveProfile}
                 onBack={() => setAppState('scanning')}
               />

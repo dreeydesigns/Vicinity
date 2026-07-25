@@ -4,17 +4,19 @@ import { User as UserType } from '../types';
 
 interface SettingsScreenProps {
   user: UserType;
-  onSave: (bio: string, avatarUrl: string) => void;
+  vibe: string;
+  onSave: (bio: string, avatarUrl: string, vibe: string) => void;
   onBack: () => void;
 }
 
-export function SettingsScreen({ user, onSave, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ user, vibe: initialVibe, onSave, onBack }: SettingsScreenProps) {
   const [bio, setBio] = useState(user.bio);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+  const [vibe, setVibe] = useState(initialVibe);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
-    onSave(bio, avatarUrl);
+    onSave(bio, avatarUrl, vibe);
     onBack();
   };
 
@@ -83,6 +85,34 @@ export function SettingsScreen({ user, onSave, onBack }: SettingsScreenProps) {
             placeholder="Write a short bio..."
             className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all min-h-[120px] resize-none shadow-sm"
           />
+        </div>
+
+        {/* Vibe Selector */}
+        <div className="mb-6">
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            App Vibe
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id: 'default', label: 'Default', bg: 'bg-violet-500' },
+              { id: 'sunset', label: 'Sunset', bg: 'bg-orange-500' },
+              { id: 'neon', label: 'Neon', bg: 'bg-fuchsia-500' },
+              { id: 'midnight', label: 'Midnight', bg: 'bg-slate-800' }
+            ].map(v => (
+              <button
+                key={v.id}
+                onClick={() => setVibe(v.id)}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+                  vibe === v.id ? 'border-violet-500 bg-violet-50' : 'border-slate-100 bg-white hover:border-slate-200'
+                }`}
+              >
+                <div className={`w-6 h-6 rounded-full ${v.bg} mb-2 shadow-sm`} />
+                <span className={`text-xs font-semibold ${vibe === v.id ? 'text-violet-700' : 'text-slate-500'}`}>
+                  {v.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
