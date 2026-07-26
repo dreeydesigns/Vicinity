@@ -337,6 +337,9 @@ export function MiniMap({ matches, venues = [] }: MiniMapProps) {
             </button>
             <h4 className="text-sm font-bold pr-6 truncate">{selectedVenue.name}</h4>
             <p className={`text-xs truncate ${mapView === 'satellite' ? 'text-slate-400' : 'text-slate-500'}`}>{selectedVenue.address}</p>
+            <p className={`text-xs font-semibold ${mapView === 'satellite' ? 'text-violet-400' : 'text-violet-600'}`}>
+              Distance: {selectedVenue.distanceMeters < 1000 ? Math.round(selectedVenue.distanceMeters) + 'm' : (selectedVenue.distanceMeters / 1000).toFixed(1) + 'km'}
+            </p>
             
             <div className="mt-1.5 flex">
               <button 

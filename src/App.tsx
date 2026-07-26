@@ -6,6 +6,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Radar, Calendar, Wallet, Settings, Activity, SlidersHorizontal, MessageCircle, Archive } from 'lucide-react';
 import { DateHistory } from './components/DateHistory';
+import { DatePrepChecklist } from './components/DatePrepChecklist';
+import { PostDateFeedback } from './components/PostDateFeedback';
 import { SparkArchive } from './components/SparkArchive';
 import { SparkCard } from './components/SparkCard';
 import { WalletScreen } from './components/WalletScreen';
@@ -27,6 +29,8 @@ export default function App() {
   const [onDateMode, setOnDateMode] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [currentUser, setCurrentUser] = useState<User>({
     id: 'my_id',
     displayName: 'Me',
@@ -35,17 +39,32 @@ export default function App() {
     interests: []
   });
 
+  const notificationSentRef = React.useRef(false);
+
   useEffect(() => {
     if (!scheduledDate || appState !== 'dashboard') return;
     const updateCountdown = () => {
       const diff = new Date(scheduledDate).getTime() - Date.now();
       if (diff <= 0) {
         setTimeLeft('It\'s Date Time! 🎉');
+        if (!feedbackSubmitted && !showFeedbackModal) {
+          setShowFeedbackModal(true);
+        }
       } else {
         const h = Math.floor(diff / (1000 * 60 * 60));
         const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const s = Math.floor((diff % (1000 * 60)) / 1000);
         setTimeLeft(`${h}h ${m}m ${s}s`);
+
+        // Check if exactly 30 minutes (or less) left and notification not sent yet
+        if (h === 0 && m <= 30 && !notificationSentRef.current) {
+          notificationSentRef.current = true;
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Upcoming Date!', {
+              body: 'Your date is in 30 minutes. Get ready!',
+            });
+          }
+        }
       }
     };
     updateCountdown();
@@ -235,6 +254,8 @@ export default function App() {
                 </motion.div>
               )}
 
+              {scheduledDate && <DatePrepChecklist scheduledDate={scheduledDate} />}
+
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 flex items-center gap-4">
                 <img src={mockMatch.user.avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
                 <div className="flex-1">
@@ -282,6 +303,21 @@ export default function App() {
               >
                 <Activity size={16} /> Resume Scanning
               </button>
+              
+              {showFeedbackModal && (
+                <PostDateFeedback
+                  matchName={mockMatch.user.displayName}
+                  onSubmit={(rating, note) => {
+                    console.log('Feedback submitted:', rating, note);
+                    setFeedbackSubmitted(true);
+                    setShowFeedbackModal(false);
+                  }}
+                  onDismiss={() => {
+                    setFeedbackSubmitted(true);
+                    setShowFeedbackModal(false);
+                  }}
+                />
+              )}
             </motion.div>
           )}
 
@@ -308,6 +344,7 @@ export default function App() {
               className="absolute inset-0 z-20 bg-slate-50 overflow-y-auto"
             >
               <ScheduleScreen
+                match={mockMatch}
                 venues={mockVenues}
                 timeSlots={mockTimeSlots}
                 onBack={() => setAppState('dashboard')}

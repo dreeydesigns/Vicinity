@@ -1,17 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Star, Utensils, Calendar as CalendarIcon, MapPin, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
-import { VenueOption, TimeSlot } from '../types';
+import { VenueOption, TimeSlot, Match } from '../types';
 import { googleSignIn, initAuth, getAccessToken } from '../lib/google-auth';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Sparkles } from 'lucide-react';
+
+const mockAvailabilityData = [
+  { day: 'Mon', free: 2, busy: 6 },
+  { day: 'Tue', free: 4, busy: 4 },
+  { day: 'Wed', free: 1, busy: 7 },
+  { day: 'Thu', free: 5, busy: 3 },
+  { day: 'Fri', free: 3, busy: 5 },
+  { day: 'Sat', free: 8, busy: 0 },
+  { day: 'Sun', free: 7, busy: 1 },
+];
 
 interface ScheduleScreenProps {
+  match: Match;
   venues: VenueOption[];
   timeSlots: TimeSlot[];
   onBack: () => void;
   onConfirm: (date: string) => void;
 }
 
-export function ScheduleScreen({ venues, timeSlots: initialTimeSlots, onBack, onConfirm }: ScheduleScreenProps) {
-  const [selectedVenue, setSelectedVenue] = useState<string | null>(venues[0]?.id || null);
+export function ScheduleScreen({ match, venues: initialVenues, timeSlots: initialTimeSlots, onBack, onConfirm }: ScheduleScreenProps) {
+  const [venues, setVenues] = useState<VenueOption[]>(initialVenues);
+  const [loadingAiVenues, setLoadingAiVenues] = useState(false);
+  const [selectedVenue, setSelectedVenue] = useState<string | null>(initialVenues[0]?.id || null);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(initialTimeSlots);
   const [selectedTime, setSelectedTime] = useState<string | null>(initialTimeSlots[0]?.start || null);
   const [confirming, setConfirming] = useState(false);
@@ -57,6 +72,26 @@ export function ScheduleScreen({ venues, timeSlots: initialTimeSlots, onBack, on
       console.error('Failed to sync calendar', err);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleFetchAiVenues = async () => {
+    setLoadingAiVenues(true);
+    try {
+      const response = await fetch('/api/suggest-venues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sharedInterests: match.sharedInterests })
+      });
+      const data = await response.json();
+      if (data.venues && data.venues.length > 0) {
+        setVenues(data.venues);
+        setSelectedVenue(data.venues[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch AI venues', err);
+    } finally {
+      setLoadingAiVenues(false);
     }
   };
 
@@ -130,7 +165,17 @@ export function ScheduleScreen({ venues, timeSlots: initialTimeSlots, onBack, on
           <p className="text-sm text-slate-500">Pick a vibe and we'll set it up ✨</p>
         </div>
 
-        <h2 className="text-[11px] font-bold text-slate-400 tracking-wider mb-3 uppercase">Venues</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Venues</h2>
+          <button 
+            onClick={handleFetchAiVenues} 
+            disabled={loadingAiVenues}
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors bg-violet-100 text-violet-700 hover:bg-violet-200`}
+          >
+            {loadingAiVenues ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            AI Suggest
+          </button>
+        </div>
         
         <div className="flex flex-col gap-3 mb-8">
           {venues.map((venue, index) => (
@@ -210,7 +255,7 @@ export function ScheduleScreen({ venues, timeSlots: initialTimeSlots, onBack, on
           </button>
         </div>
         
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2.5 mb-8">
           {timeSlots.map((slot) => (
             <div
               key={slot.start}
@@ -230,6 +275,19 @@ export function ScheduleScreen({ venues, timeSlots: initialTimeSlots, onBack, on
               </span>
             </div>
           ))}
+        </div>
+
+        <h2 className="text-[11px] font-bold text-slate-400 tracking-wider mb-3 uppercase">Weekly Availability</h2>
+        <div className="bg-white rounded-2xl p-4 shadow-sm h-48 mb-6">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={mockAvailabilityData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+              <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Bar dataKey="free" stackId="a" fill="#8b5cf6" radius={[0, 0, 4, 4]} name="Free (hrs)" />
+              <Bar dataKey="busy" stackId="a" fill="#e2e8f0" radius={[4, 4, 0, 0]} name="Busy (hrs)" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

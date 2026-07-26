@@ -208,6 +208,11 @@ export function WalletScreen({ match, walletContent: initialWalletContent, onBac
                 This info is private. Use the proxy number for the first 24 hours.
               </p>
             </div>
+            
+            <div className="flex items-center justify-center gap-1.5 mt-6 pb-2 text-slate-400">
+              <ShieldCheck size={14} className="text-emerald-500" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">End-to-End Encrypted</span>
+            </div>
           </motion.div>
         )}
       </div>

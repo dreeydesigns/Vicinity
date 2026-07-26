@@ -27,7 +27,7 @@ Shared Interests: ${sharedInterests.join(", ")}
 Summary:`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
       });
 
@@ -35,6 +35,46 @@ Summary:`;
     } catch (error) {
       console.error("Gemini API Error:", error);
       res.status(500).json({ error: "Failed to generate match summary." });
+    }
+  });
+
+  // API Route for AI Venue Suggestions
+  app.post("/api/suggest-venues", async (req, res) => {
+    try {
+      const { sharedInterests } = req.body;
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Gemini API key not found." });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `You are an expert date planner. Suggest exactly 3 date venues based on the following shared interests: ${sharedInterests.join(", ")}.
+Return the response in valid JSON format. It must be an array of objects with the following properties:
+- id: a unique string id
+- name: string (venue name)
+- address: string
+- rating: number (from 1 to 5)
+- priceLevel: number (1 to 4)
+- vibe: string (e.g. "romantic", "casual", "adventurous", "cozy")
+- distanceMeters: number
+- reason: a short 1-sentence reason why it's a good fit.
+- photoUrl: an empty string ("")
+
+Only return the JSON array, no markdown formatting.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+        }
+      });
+
+      const venues = JSON.parse(response.text || "[]");
+      res.json({ venues });
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+      res.status(500).json({ error: "Failed to suggest venues." });
     }
   });
 
